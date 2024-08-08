@@ -1,14 +1,17 @@
 from typing import Dict, List, Any, Tuple
-from enum import Enum, auto
+from enum import Enum
 
 from pydantic import BaseModel, field_validator
 from tabulate import tabulate
+from faker import Faker
 
+fake = Faker()
 
 def enum_factory(enum_name: str, names: Tuple[str, ...]) -> Enum:
-    """Create an Enum class with the given name and names."""
-    TEnumClass = Enum(enum_name, {name: name for name in names})
-    return TEnumClass
+    """Create an Enum class with the given name and names. 
+    Note that this is restricted to string-types names."""
+    return Enum(enum_name, {name: name for name in names})
+
 
 
 TableFmt: Enum = enum_factory('TableFmt', ('plain', 'simple', 'github', 'grid', 'fancy_grid', 'pipe', 'orgtbl', 'jira', 'presto', 'pretty',
@@ -29,15 +32,17 @@ class TableData(BaseModel):
         return mapping
 
 
-def make_table(table: TableData, tbl_format: Enum = TableFmt.mediawiki) -> str:
+def make_table(table: TableData, tbl_format: Enum = TableFmt.github) -> str:
     """Convert the table to a table string."""
     return tabulate(table.mapping, headers="keys", tablefmt=tbl_format.value)
 
+def generate_data(fields:Tuple[str, ...], t_size:int) -> TableData:
+    """Generate a table from the given data."""
+    return {
+        field: [fake.name() for _ in range(t_size)]
+        for field in fields
+    }
 
 if __name__ == '__main__':
-    data = TableData(mapping={
-        "Name": ["Alice", "Bob", "Charlie"],
-        "Age": [30, 45, 25],
-        "City": ["New York", "Los Angeles", "Chi"]
-    })
+    data = TableData(mapping=generate_data(('name', 'address', 'email'), 5))
     print(make_table(data))
